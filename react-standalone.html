@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Organizational Memory Portal (React)</title>
+    <link rel="icon" href="./ntpc.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: "#003c6c",
+                        secondary: "#f49c56",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React 18 & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for in-browser JSX parsing -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .bg-app {
+            background-color: #d1dde8;
+            position: relative;
+            z-index: 0;
+        }
+
+        .bg-app::before {
+            content: "";
+            position: absolute;
+            inset: -20px;
+            background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1969&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            filter: blur(8px);
+            opacity: 0.35;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        #sidebar {
+            width: 260px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-text {
+            transition: opacity 0.2s, max-width 0.3s;
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 200px;
+            opacity: 1;
+        }
+
+        #sidebar.collapsed {
+            width: 72px;
+        }
+
+        #sidebar.collapsed .sidebar-text {
+            opacity: 0;
+            max-width: 0;
+            display: none;
+        }
+
+        #sidebar.collapsed #sidebar-logo,
+        #sidebar.collapsed #fullscreenBtn {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-header {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #sidebar.collapsed .nav-item .material-symbols-outlined {
+            margin-left: 0;
+        }
+
+        #sidebar.collapsed .sidebar-help-box {
+            display: none;
+        }
+
+        @media (max-width: 767px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 280px !important;
+                max-width: 85vw;
+                z-index: 50;
+                transform: translateX(-100%);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            }
+
+            #sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        @media (min-width: 768px) {
+            #sidebar {
+                position: relative;
+                transform: none !important;
+            }
+        }
+
+        .raised-card {
+            border-radius: 12px;
+            box-shadow:
+                inset 2px 2px 6px rgba(255, 255, 255, 0.4),
+                inset -2px -2px 6px rgba(0, 0, 0, 0.1),
+                0px 6px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .raised-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .raised-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow:
+                inset 2px 2px 6px rgba(255, 255, 255, 0.6),
+                inset -2px -2px 6px rgba(0, 0, 0, 0.05),
+                0px 10px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .raised-card:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow:
+                inset 2px 2px 6px rgba(0, 0, 0, 0.1),
+                inset -2px -2px 6px rgba(255, 255, 255, 0.3),
+                0px 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card-shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+
+<body class="bg-app text-slate-800 font-sans antialiased overflow-hidden h-screen h-[100dvh]">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- Data ---
+        const navItems = [
+            { id: 'home', label: 'Home', icon: 'home', active: true },
+            { id: 'audits', label: 'Audits', icon: 'verified_user' },
+            { id: 'dop', label: 'DOP', icon: 'groups' },
+            { id: 'sops', label: 'SOPs', icon: 'assignment' },
+            { id: 'lmis', label: 'LMIs', icon: 'insights' },
+            { id: 'manuals', label: 'Manuals', icon: 'menu_book' },
+            { id: 'feasibility', label: 'Feasibility Reports', icon: 'lightbulb' },
+            { id: 'correspondences', label: 'Correspondences', icon: 'mail' },
+            { id: 'employee-experience', label: 'Employee Experience', icon: 'groups' },
+            { id: 'wikipedia', label: 'Enterprise Wiki', icon: 'menu_book' },
+            { id: 'esg', label: 'ESG', icon: 'eco' },
+            { id: 'csr', label: 'CSR', icon: 'volunteer_activism' },
+            { id: 'annual-report', label: 'Annual Report', icon: 'description' },
+            { id: 'finances', label: 'Finances', icon: 'account_balance' },
+            { id: 'fuel', label: 'Fuel', icon: 'local_gas_station' },
+            { id: 'important-docs', label: 'Important Documents', icon: 'workspace_premium' },
+        ];
+
+        const microToolCards = [
+            { id: 'audits', label: 'Audits', icon: 'verified_user', bg: 'bg-[#518fbe]', textColor: 'text-[#154669]' },
+            { id: 'dop', label: 'DOP', icon: 'groups', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'sops', label: 'SOPs', icon: 'assignment', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'lmis', label: 'LMIs/OGN', icon: 'insights', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'manuals', label: 'Manuals', icon: 'menu_book', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'feasibility', label: 'Feasibility', icon: 'lightbulb', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'mail', label: 'Mail', icon: 'mail', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'employee-experience', label: 'Employee Experience', icon: 'groups', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'pedia', label: 'Enterprise Pedia', icon: 'menu_book', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'esg', label: 'ESG', icon: 'eco', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'csr', label: 'CSR', icon: 'volunteer_activism', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'annual-report', label: 'Annual Report', icon: 'description', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'finances', label: 'Finances', icon: 'account_balance', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'fuel', label: 'Fuel', icon: 'local_gas_station', bg: 'bg-[#90bbdb]', textColor: 'text-[#154669]' },
+            { id: 'important-docs', label: 'Important Docs', icon: 'workspace_premium', bg: 'bg-[#ef8d43]', iconColor: 'text-[#7e3702]', textColor: 'text-black' },
+        ];
+
+        const departmentCards = [
+            { id: 'hr', label: 'HR', icon: 'badge', bg: 'bg-[#518fbe]', textColor: 'text-black', iconColor: 'text-[#154669]' },
+            { id: 'finance', label: 'Finance', icon: 'account_balance', bg: 'bg-[#90bbdb]', textColor: 'text-black', iconColor: 'text-[#154669]' },
+            { id: 'projects', label: 'Projects', icon: 'assignment_turned_in', bg: 'bg-[#90bbdb]', textColor: 'text-black', iconColor: 'text-[#154669]' },
+            { id: 'operations', label: 'Operations', icon: 'settings', bg: 'bg-[#90bbdb]', textColor: 'text-black', iconColor: 'text-[#154669]' },
+        ];
+
+        // --- Sparkline Component ---
+        function Sparkline({ points, color = '#3b82f6', width = 64, height = 32 }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas || !points || !points.length) return;
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, width, height);
+
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+
+                const xStep = width / (points.length - 1);
+                const yMax = Math.max(...points);
+                const yMin = Math.min(...points);
+                const yRange = yMax - yMin || 1;
+
+                points.forEach((p, i) => {
+                    const x = i * xStep;
+                    const y = height - ((p - yMin) / yRange) * (height - 6) - 3;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                ctx.lineTo(width, height);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+                const grad = ctx.createLinearGradient(0, 0, 0, height);
+                grad.addColorStop(0, color + '33');
+                grad.addColorStop(1, color + '00');
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }, [points, color, width, height]);
+
+            return <canvas ref={canvasRef} className="absolute bottom-3 right-3" />;
+        }
+
+        // --- Document Access Chart Component ---
+        function DocumentAccessChart() {
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                const container = chartRef.current;
+                if (!container || !window.echarts) return;
+
+                const myChart = window.echarts.init(container);
+                const option = {
+                    baseOption: {
+                        title: {
+                            text: 'Document Type Access',
+                            left: '0',
+                            top: '0',
+                            textStyle: {
+                                color: '#202124',
+                                fontSize: 18,
+                                fontWeight: 600,
+                            },
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: {c}%',
+                        },
+                        color: ['#1f5a84', '#4d80a6', '#6a99b8', '#8db3cc', '#bed5e5', '#f3b985'],
+                        series: [
+                            {
+                                name: 'Access',
+                                type: 'pie',
+                                radius: ['45%', '75%'],
+                                center: ['50%', '55%'],
+                                avoidLabelOverlap: true,
+                                itemStyle: {
+                                    borderColor: '#fff',
+                                    borderWidth: 2,
+                                },
+                                label: {
+                                    show: true,
+                                    position: 'outside',
+                                    formatter: '{name|{b}}\n{value|{c}%}',
+                                    rich: {
+                                        name: {
+                                            fontSize: 13,
+                                            color: '#333',
+                                            fontWeight: 500,
+                                            lineHeight: 18,
+                                            align: 'center',
+                                        },
+                                        value: {
+                                            fontSize: 13,
+                                            color: '#666',
+                                            align: 'center',
+                                        },
+                                    },
+                                },
+                                labelLine: {
+                                    show: true,
+                                    length: 18,
+                                    length2: 22,
+                                    lineStyle: {
+                                        color: '#999',
+                                        width: 1,
+                                    },
+                                },
+                                data: [
+                                    { value: 35, name: 'SOPs' },
+                                    { value: 25, name: 'MoMs' },
+                                    { value: 15, name: 'Manuals' },
+                                    { value: 10, name: 'LMIs' },
+                                    { value: 10, name: 'Feasibility' },
+                                    { value: 5, name: 'Audits' },
+                                ],
+                            },
+                        ],
+                    },
+                    media: [
+                        {
+                            query: { maxWidth: 480 },
+                            option: {
+                                title: { textStyle: { fontSize: 15 } },
+                                series: [
+                                    {
+                                        radius: ['38%', '60%'],
+                                        center: ['50%', '55%'],
+                                        labelLine: { length: 8, length2: 10 },
+                                        label: {
+                                            rich: {
+                                                name: { fontSize: 11, lineHeight: 14 },
+                                                value: { fontSize: 11 },
+                                            },
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                };
+
+                myChart.setOption(option);
+
+                const handleResize = () => myChart.resize();
+                window.addEventListener('resize', handleResize);
+
+                let ro = null;
+                if (window.ResizeObserver) {
+                    ro = new ResizeObserver(() => myChart.resize());
+                    ro.observe(container);
+                }
+
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    if (ro) ro.disconnect();
+                    myChart.dispose();
+                };
+            }, []);
+
+            return (
+                <div className="col-span-12 lg:col-span-7 min-h-[300px] h-[320px] sm:h-[350px] lg:h-[35vh] bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div ref={chartRef} className="w-full flex-1 min-h-0" id="chart" />
+                </div>
+            );
+        }
+
+        // --- Main App Component ---
+        function App() {
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+            const [mobileOpen, setMobileOpen] = useState(false);
+            const [isFullscreen, setIsFullscreen] = useState(false);
+
+            useEffect(() => {
+                const handleFullscreenChange = () => {
+                    setIsFullscreen(Boolean(document.fullscreenElement));
+                };
+                document.addEventListener('fullscreenchange', handleFullscreenChange);
+                return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            }, []);
+
+            const toggleFullscreen = useCallback(() => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen?.().catch(() => {});
+                } else {
+                    document.exitFullscreen?.().catch(() => {});
+                }
+            }, []);
+
+            const handleToggleCollapse = useCallback(() => {
+                if (window.innerWidth < 768) {
+                    setMobileOpen((prev) => !prev);
+                } else {
+                    setSidebarCollapsed((prev) => !prev);
+                }
+            }, []);
+
+            return (
+                <div className="flex flex-col h-screen h-[100dvh] overflow-hidden">
+                    {/* Mobile Header Bar */}
+                    <header className="md:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-2.5 z-30 shrink-0 shadow-sm">
+                        <div className="flex items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => setMobileOpen(true)}
+                                className="p-2 -ml-1.5 rounded-lg hover:bg-slate-100 text-slate-700 outline-none transition-colors"
+                                aria-label="Open Navigation Menu"
+                            >
+                                <span className="material-symbols-outlined text-2xl">menu</span>
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <img
+                                    className="h-8 object-contain w-auto"
+                                    src="./ntpc.png"
+                                    alt="Logo"
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                                <span className="font-bold text-slate-800 text-sm tracking-tight">
+                                    OrgMemory
+                                </span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="p-2 rounded-lg hover:bg-slate-100 text-slate-700 outline-none transition-colors"
+                            aria-label="Toggle Fullscreen"
+                        >
+                            <span className="material-symbols-outlined fullscreen-icon text-2xl">
+                                {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                            </span>
+                        </button>
+                    </header>
+
+                    {/* Mobile Backdrop */}
+                    {mobileOpen && (
+                        <div
+                            onClick={() => setMobileOpen(false)}
+                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+                            aria-hidden="true"
+                        />
+                    )}
+
+                    <div className="flex flex-row flex-1 min-h-0 overflow-hidden relative">
+                        {/* Sidebar */}
+                        <aside
+                            id="sidebar"
+                            className={`bg-white flex flex-col z-50 border-r border-slate-200 h-full shrink-0 overflow-y-auto ${
+                                mobileOpen ? 'mobile-open' : ''
+                            } ${sidebarCollapsed ? 'collapsed' : ''}`}
+                        >
+                            <div className="sidebar-header flex items-center px-4 gap-3 shrink-0 border-b h-16">
+                                <button
+                                    type="button"
+                                    onClick={toggleFullscreen}
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                                    aria-label="Toggle Fullscreen"
+                                >
+                                    <span className="material-symbols-outlined fullscreen-icon">
+                                        {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                                    </span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleToggleCollapse}
+                                    className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors shrink-0 outline-none"
+                                    aria-label="Toggle Sidebar Menu"
+                                >
+                                    <span className="material-symbols-outlined">menu</span>
+                                </button>
+
+                                <div id="sidebar-logo" className="flex items-center gap-2 overflow-hidden">
+                                    <img
+                                        className="h-10 object-contain w-auto max-w-[130px] transition-all"
+                                        src="./ntpc.png"
+                                        alt="Portal Logo"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                    <span className="font-bold text-slate-800 text-sm tracking-tight truncate">
+                                        OrgMemory
+                                    </span>
+                                </div>
+                            </div>
+
+                            <nav className="flex-1 py-4 flex flex-col">
+                                <div className="space-y-1 px-3">
+                                    {navItems.map((item) => (
+                                        <a
+                                            key={item.id}
+                                            href={`#${item.id}`}
+                                            onClick={() => setMobileOpen(false)}
+                                            className={`nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                                                item.active
+                                                    ? 'bg-[#eef4fa] text-[#1e4e79] font-semibold'
+                                                    : 'text-slate-600 hover:bg-slate-100 font-medium'
+                                            }`}
+                                        >
+                                            <span className="material-symbols-outlined ml-1">{item.icon}</span>
+                                            <span className="sidebar-text text-sm truncate">{item.label}</span>
+                                        </a>
+                                    ))}
+                                </div>
+                            </nav>
+
+                            <div className="sidebar-help-box p-3 border-t border-slate-200 bg-[#eef4fa] px-3">
+                                <p className="text-xs font-semibold mb-2 text-black uppercase">Need Help?</p>
+                                <p className="text-[11px] text-black mb-3">
+                                    Check our guide for advanced portal management tools.
+                                </p>
+                                <button
+                                    type="button"
+                                    className="w-full py-2 bg-white border border-slate-300 text-black text-xs font-bold rounded-lg hover:bg-slate-50 active:scale-95 transition-all shadow-sm"
+                                >
+                                    Learn More
+                                </button>
+                            </div>
+                        </aside>
+
+                        {/* Main Content Area */}
+                        <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden">
+                            <div className="space-y-4 sm:space-y-5 p-3 sm:p-5 md:p-6 bg-[#ecf1f5] min-h-full">
+                                <h1 className="text-xl sm:text-[23px] font-semibold sm:font-normal text-slate-900 text-center py-1">
+                                    Organization Memory
+                                </h1>
+
+                                <div className="grid grid-cols-12 gap-3 sm:gap-4 md:gap-5">
+                                    {/* 15 Micro Tools Grid */}
+                                    <div className="col-span-12 bg-white rounded-xl p-3 sm:p-4 md:p-5 border border-slate-200 shadow-sm">
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-8 2xl:grid-cols-11 gap-2.5 sm:gap-3.5 md:gap-4 lg:gap-5 w-full">
+                                            {microToolCards.map((card) => {
+                                                const iconColor = card.iconColor || card.textColor;
+                                                return (
+                                                    <div
+                                                        key={card.id}
+                                                        className={`${card.bg} p-2 sm:p-2.5 md:p-3 flex flex-col items-center justify-center aspect-square cursor-pointer raised-card select-none`}
+                                                    >
+                                                        <span className={`material-symbols-outlined text-3xl sm:text-4xl md:text-[42px] 2xl:text-[50px] mb-1 sm:mb-1.5 ${iconColor}`}>
+                                                            {card.icon}
+                                                        </span>
+                                                        <span className={`text-xs sm:text-[13px] md:text-[14px] 2xl:text-[15px] text-center ${card.textColor} leading-tight font-medium`}>
+                                                            {card.label}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 4 Departments Grid */}
+                                    <div className="col-span-12 bg-white rounded-xl p-3 sm:p-4 md:p-5 border border-slate-200 shadow-sm">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 w-full">
+                                            {departmentCards.map((dept) => (
+                                                <div
+                                                    key={dept.id}
+                                                    className={`${dept.bg} w-full h-[76px] sm:h-[85px] flex flex-col items-center justify-center cursor-pointer raised-card p-2 select-none`}
+                                                >
+                                                    <span className={`material-symbols-outlined text-3xl sm:text-4xl md:text-[42px] mb-0.5 sm:mb-1 filled ${dept.iconColor}`}>
+                                                        {dept.icon}
+                                                    </span>
+                                                    <span className={`text-sm sm:text-base md:text-[17px] font-normal ${dept.textColor} leading-none`}>
+                                                        {dept.label}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Chart */}
+                                    <DocumentAccessChart />
+
+                                    {/* Metric Cards */}
+                                    <div className="col-span-12 lg:col-span-5 bg-white rounded-xl p-3 sm:p-4 md:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-center items-stretch gap-3 sm:gap-4">
+                                        {/* Documents Viewed */}
+                                        <div className="flex-1 bg-white p-3.5 sm:p-4 rounded-xl metric-card-shadow flex flex-col justify-between relative overflow-hidden min-h-[140px] border border-slate-200">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="bg-[#1849fd] p-2 rounded-xl text-white shrink-0">
+                                                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414L13.586 3H9z" />
+                                                        <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                                                    </svg>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                                    <div className="flex items-center">
+                                                        <span className="text-gray-500 text-xs font-semibold truncate uppercase tracking-wider">
+                                                            Documents Viewed
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xl sm:text-2xl font-bold text-gray-800">12,480</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="pt-2">
+                                                <div className="flex items-baseline space-x-1">
+                                                    <span className="text-green-500 text-xs font-bold flex items-center">
+                                                        <svg className="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path clipRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" fillRule="evenodd" />
+                                                        </svg>
+                                                        12.5%
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] sm:text-xs text-slate-500">vs last months</span>
+                                            </div>
+                                            <Sparkline points={[10, 15, 12, 18, 14, 22, 20]} color="#3b82f6" />
+                                        </div>
+
+                                        {/* Downloads */}
+                                        <div className="flex-1 bg-white p-3.5 sm:p-4 rounded-xl metric-card-shadow flex flex-col justify-between relative overflow-hidden min-h-[140px] border border-slate-200">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="bg-green-600 p-2 rounded-xl text-white shrink-0">
+                                                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                                                    </svg>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                                    <div className="flex items-center">
+                                                        <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                                                            Downloads
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xl sm:text-2xl font-bold text-gray-800">8,734</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="pt-2">
+                                                <div className="flex items-baseline space-x-1">
+                                                    <span className="text-green-500 text-xs font-bold flex items-center">
+                                                        <svg className="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path clipRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" fillRule="evenodd" />
+                                                        </svg>
+                                                        8.2%
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] sm:text-xs text-slate-500">vs last months</span>
+                                            </div>
+                                            <Sparkline points={[12, 10, 14, 13, 17, 15, 20]} color="#10b981" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

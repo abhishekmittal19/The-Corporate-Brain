@@ -1,0 +1,18 @@
+export const navItems = [
+  { id: 'home', label: 'Home', icon: 'home', active: true },
+  { id: 'audits', label: 'Audits', icon: 'verified_user' },
+  { id: 'dop', label: 'DOP', icon: 'groups' },
+  { id: 'sops', label: 'SOPs', icon: 'assignment' },
+  { id: 'lmis', label: 'LMIs', icon: 'insights' },
+  { id: 'manuals', label: 'Manuals', icon: 'menu_book' },
+  { id: 'feasibility', label: 'Feasibility Reports', icon: 'lightbulb' },
+  { id: 'correspondences', label: 'Correspondences', icon: 'mail' },
+  { id: 'employee-experience', label: 'Employee Experience', icon: 'groups' },
+  { id: 'wikipedia', label: 'Enterprise Wiki', icon: 'menu_book' },
+  { id: 'esg', label: 'ESG', icon: 'eco' },
+  { id: 'csr', label: 'CSR', icon: 'volunteer_activism' },
+  { id: 'annual-report', label: 'Annual Report', icon: 'description' },
+  { id: 'finances', label: 'Finances', icon: 'account_balance' },
+  { id: 'fuel', label: 'Fuel', icon: 'local_gas_station' },
+  { id: 'important-docs', label: 'Important Documents', icon: 'workspace_premium' },
+];
